@@ -1,6 +1,5 @@
 # T-SQL-Cron-Schedule
 Sql server function to evaluate Schedules Cron-alike
---------
 
 The function receives two params: `@Dt datetime2`, the date to verify and a `@Schedule varchar(8000)`.  `@Schedule` is a Boolean expression of SingleSchedule, each one of them is cron-like. If `@Schedule` is malformed return null or Bit 1/0 when match/no match. All Boolean operators permited  |(OR), &(AND), ^(XOR) and ~(NOT) and parenthesis for grouping.
 
