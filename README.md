@@ -55,7 +55,7 @@ Syntax is based on Cron. But there’s some important differences.
 * No minute field.
 * No text in fields like Sunday or Jan. 
 * Most Cron use 0-6 for Day of the week starting Monday. Function follow SQL default 1-7 starting Sunday.
-* The grandfather of crons, Vixie Cron was written as a char level parser, not token level with some faulty logic: when firstchar = \* means something like "don’t use this filter" instead of "use the full range". Also, Cron evaluates Field2 (Day of month) and Field4 (Day of the week) as OR. As a result, in Cron `30 8 *,1 * 1` means 8:30 every Monday but `30 8 1,* * 1`. (Read more: [crontab.guru - Cron bug](https://crontab.guru/cron-bug.html))
+* The grandfather of crons, Vixie Cron was written as a char level parser, not token level with some faulty logic: when firstchar = \* means something like "don’t use this filter" instead of "use the full range". Also, Cron evaluates Field2 (Day of month) and Field4 (Day of the week) as OR. As a result, in Cron `30 8 * * 2` means 8:30 every Monday but `30 8 1-31 * 2` means 8:30 every day. (Read more: [crontab.guru - Cron bug](https://crontab.guru/cron-bug.html))
 
 In summary. To evaluate a `@Dt` vs a SingleSchedule Field1, Field2...
 
