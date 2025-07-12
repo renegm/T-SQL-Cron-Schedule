@@ -6,11 +6,13 @@ RETURNS bit
 AS
 BEGIN
     /*--#region Cleanup and simple checks*/
-    IF @Schedule IN ( '', '*', '* *', '* * *', '* * * *' ) RETURN 1; /*Trivial Schedules*/
+    IF @Schedule IN ( '', '*', '* *', '* * *', '* * * *' )
+        RETURN 1; /*Trivial Schedules*/
     SELECT @Schedule = REPLACE(@Schedule, CHAR(9), ' ')
          , @Schedule = REPLACE(@Schedule, CHAR(10), ' ')
          , @Schedule = REPLACE(@Schedule, CHAR(13), ' ');
-    IF @Schedule LIKE '%[^|&^~)(0-9, */-]%' RETURN NULL; /*Wrong character*/
+    IF @Schedule LIKE '%[^|&^~)(0-9, */-]%'
+        RETURN NULL; /*Wrong character*/
     SELECT @Schedule = LTRIM(@Schedule)
          , @Schedule = RTRIM(@Schedule)
          , @Schedule = REPLACE(@Schedule, REPLICATE(' ', 87), ' ')
@@ -58,11 +60,13 @@ BEGIN
         SELECT @Pos = IIF(@IsOper = 1, PATINDEX('%[^)(~&^|]%', @Schedule), PATINDEX('%[)(~&^|]%', @Schedule)) - 1
              , @subSchedule = IIF(@Pos > 0, LEFT(@Schedule, @Pos), @Schedule);
         IF @IsOper = 0
-            IF @subSchedule IN ( '', '*', '* *', '* * *', '* * * *' ) SET @Return = 1;
+            IF @subSchedule IN ( '', '*', '* *', '* * *', '* * * *' )
+                SET @Return = 1;
             ELSE
                 /* --#region Main Eval */
                 WITH T AS
-                (SELECT [Key] AS Id, Value AS Token FROM OPENJSON('["' + REPLACE(@subSchedule, ' ', '","') + '"]')WHERE [Key] < 5)
+                (SELECT [Key] AS Id, Value AS Token FROM OPENJSON('["' + REPLACE(@subSchedule, ' ', '","') + '"]') WHERE [Key] < 5)
+                   /*2SQL 022 (SELECT ordinal - 1 AS Id, value AS Token FROM STRING_SPLIT(@subSchedule, ' ', 1)WHERE ordinal <= 5) */
                    , B AS
                 (   SELECT T.Id
                          , CASE WHEN T.Id > 3 THEN NULL                                                         /* Extra fields*/
@@ -71,6 +75,7 @@ BEGIN
                                 WHEN NOT (Q.Lv = 32 AND T.Id = 1 OR Q.Lv BETWEEN M.MnTkn AND M.MxTkn) THEN NULL /* L out of range*/
                                 WHEN Q.R LIKE '%[^0-9]%' THEN NULL                                              /* R must be a number or null*/
                                 /* Start single value */
+                                WHEN Q.ndx = 0 AND Q.L LIKE '%[^0-9]%' THEN NULL                                /* L must be a number on single value*/
                                 WHEN Q.ndx = 0 AND Q.Lv = 32 AND T.Id = 1 AND M.Vdt = @EoMonth THEN 1           /* Eomonth match*/
                                 WHEN Q.ndx = 0 AND Q.Lv = M.Vdt THEN 1                                          /* ndx 0 Match*/
                                 WHEN Q.ndx = 0 THEN 0                                                           /* ndx 0 No Match*/
@@ -85,7 +90,8 @@ BEGIN
                                 WHEN Q.Lv = 32 THEN 0                                                           /* last R days No match*/
                                 WHEN Q.Lv > Q.Rv THEN NULL                                                      /* Bad range*/
                                 WHEN M.Vdt BETWEEN Q.Lv AND Q.Rv THEN 1                                         /* range match*/
-                                ELSE 0                                                                          /* range No match*/ END AS Eval
+                                ELSE 0                                                                          /* range No match*/
+                           END AS Eval
                       FROM T
                       LEFT JOIN @Limits AS M ON M.Id = T.Id
                      CROSS APPLY STRING_SPLIT(T.Token, ',') AS K
@@ -105,16 +111,18 @@ BEGIN
         /* --#endregion  Main Eval */
         SELECT @Infix = @Infix + CASE WHEN @IsOper = 1 AND @Pos > 0 THEN LEFT(@Schedule, @Pos)
                                       WHEN @IsOper = 1 THEN @Schedule
-                                      ELSE CAST(@Return AS char(1))END
+                                      ELSE CAST(@Return AS char(1))
+                                 END
              , @Schedule = IIF(@Pos > 0, STUFF(@Schedule, 1, @Pos, ''), '')
              , @IsOper = ~ @IsOper;
         IF @Infix IS NULL
             RETURN NULL /*Infix is null when @Return is null because error on subschedule*/;
     END;
     SELECT @Infix = REPLACE(@Infix, '()', '1'), @Infix = REPLACE(@Infix, '~~', '');
+    WHILE @StartLen <> @EndLen
     BEGIN
         SET @StartLen = @EndLen;
-        WHILE @Infix LIKE '%[01]&[01]%' OR @Infix LIKE '%([01])%' OR @Infix LIKE '~[01]'
+        WHILE @Infix LIKE '%[01]&[01]%' OR @Infix LIKE '%([01])%' OR @Infix LIKE '%~[01]%'
             SELECT @Infix = REPLACE(@Infix, '~0', '1')
                  , @Infix = REPLACE(@Infix, '~1', '0')
                  , @Infix = REPLACE(@Infix, '0&0', '0')
@@ -123,7 +131,7 @@ BEGIN
                  , @Infix = REPLACE(@Infix, '1&1', '1')
                  , @Infix = REPLACE(@Infix, '(0)', '0')
                  , @Infix = REPLACE(@Infix, '(1)', '1');
-        WHILE @Infix LIKE '%[01][|^][01]%' OR @Infix LIKE '%([01])%' OR @Infix LIKE '~[01]'
+        WHILE @Infix LIKE '%[01][|^][01]%' OR @Infix LIKE '%([01])%' OR @Infix LIKE '~%[01]%'
             SELECT @Infix = REPLACE(@Infix, '0|0', '0')
                  , @Infix = REPLACE(@Infix, '0|1', '1')
                  , @Infix = REPLACE(@Infix, '1|0', '1')

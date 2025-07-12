@@ -87,3 +87,8 @@ To evaluate the `@Schedule` each SingleSchedule inside is evaluated and then, th
   Well, I don't know, it's up to you. But I found myself time and again putting adhoc code to control something. `If today is an odd Monday, 6PM Continue Else return`. And checking `@@DATEFIRST` because someone maybe play a little bit. I'm very lazy, I keep a table with my tasks and schedules and a keyboard snippet that returns something like
   `SELECT * FROM MyTasks WHERE Tools.CheckSchedule(CURRENT_TIMESTAMP,Schedule)=1`.  I'm already here, I don't want to look at outlook or phone or anything.
 * It is impossible to do ...something. Things that depend on the year can be complicated or impossible. Like July 1st of leap years. The good news is that 8000 characters go a long way and some things could be achieved using only a few dozen schedules. But it would be ridiculous. Some things can and should be handled from the Agent service, Task schedule or something else. But maybe I will add something in the future. I accept suggestions.
+
+## Compatibility
+
+The function uses OPENJSON (to make an ordered split string) and SPLIT_STRING (when it doesn't matter). So SQL 2016 or later is required. It is easy to change this part if needed. Or change Openjson to SPLIT_STRING with ordinal if you are SQL 2022 user. 
+
